@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.wuweiblog.com/"/>
-  <updated>2018-11-08T04:44:09.000Z</updated>
+  <updated>2018-11-11T15:27:17.977Z</updated>
   <id>http://www.wuweiblog.com/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>kd树的构建</title>
+    <link href="http://www.wuweiblog.com/2018/11/11/kd%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA/"/>
+    <id>http://www.wuweiblog.com/2018/11/11/kd树的构建/</id>
+    <published>2018-11-11T14:04:33.000Z</published>
+    <updated>2018-11-11T15:27:17.977Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;在这个普天同庆的光棍节的大日子默默的睡了个天昏地暗，然后爬起来写了个专利。实际上写专利的时候又突然搞懂了KD树的构建算法，果然工作使我快乐，以前的时候一直在用KD树，不过都是用的开源的库，所谓的混合索引方式也只是在开源库的基础上进行代码的改造，对于原理的理解还是不够深入，今天在写专利的时候重新梳理了一次觉得终于弄得有点明白了。<br>&nbsp;&nbsp;&nbsp;&nbsp;下面上一张图来说明一下这个过程：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E4%BA%8C%E7%BB%B4%E7%A9%BA%E9%97%B4KD%E6%A0%91.jpg">  </p><p>&nbsp;&nbsp;&nbsp;&nbsp;上图是二维空间KD树的划分过程，首先确定划分是从哪一个维度进行，是从x维还是从y维，一般确定维度的过程是计算数据集在各个维度的方差或标准差，从方差或标准差大的维度开始计算进行划分。确定维度后按照该维度进行排序取中位数将点集划分为两个部分，如线1所示，进行第一次划分之后对左右两个点集进行第二次划分如线2所示，然后依次进行划分直到所有点都只属于某一个划分。上图是对于二维点的一个划分，实际上对于高维的点也差不多，由于高维画起来比较麻烦就懒得画了。在解决划分和构造的问题的基础上我们就需要问，如果构造好了一棵树，怎么进行最近邻查询，这个就是我们下面需要讨论的问题。<br>&nbsp;&nbsp;&nbsp;&nbsp;我们用一幅图来展示整个搜索过程：</p><p><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E4%BA%8C%E7%BB%B4%E7%A9%BA%E9%97%B4KD%E6%A0%91%E6%90%9C%E7%B4%A2.jpg"><br>以上就是我们的最近邻的搜索过程,红色的五角星为目标点，首先计算目标点到根节点的距离，构成一个超球，判断各个区域是否与超球有相交，通过判断可知P8与P11所在空间与超球没有交集因此忽略这两个部分，然后计算与P3和P9的距离，与根节点的距离比较，如果小于根节点的距离则缩小这个超球，为点到P3的距离，据此可以忽略整个P6右侧所有节点，以及P4节点所在空间；然后遍历剩下的节点，找到最近的节点P1。<br>参考资料：<br><a href="https://leileiluoluo.com/posts/kdtree-algorithm-and-implementation.html" target="_blank" rel="noopener">https://leileiluoluo.com/posts/kdtree-algorithm-and-implementation.html</a><br><a href="https://www.cnblogs.com/earendil/p/8135074.html" target="_blank" rel="noopener">https://www.cnblogs.com/earendil/p/8135074.html</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;在这个普天同庆的光棍节的大日子默默的睡了个天昏地暗，然后爬起来写了个专利。实际上写专利的时候又突然搞懂了KD树的构建算法，果然工作使我快乐，以前的时候一直在用KD树，不过都是用的开源的库，所谓的混合索引方式也只是在开源库的基础
+      
+    
+    </summary>
+    
+      <category term="算法" scheme="http://www.wuweiblog.com/categories/%E7%AE%97%E6%B3%95/"/>
+    
+    
+      <category term="算法" scheme="http://www.wuweiblog.com/tags/%E7%AE%97%E6%B3%95/"/>
+    
+  </entry>
   
   <entry>
     <title>选择</title>
@@ -488,31 +513,6 @@
     
     
       <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>不读书(五)</title>
-    <link href="http://www.wuweiblog.com/2018/05/07/%E4%B8%8D%E8%AF%BB%E4%B9%A6(%E4%BA%94)/"/>
-    <id>http://www.wuweiblog.com/2018/05/07/不读书(五)/</id>
-    <published>2018-05-07T15:19:36.000Z</published>
-    <updated>2018-08-29T00:12:55.376Z</updated>
-    
-    <content type="html"><![CDATA[<p>也许不应该在读了这么多书严肃文学的情况下去单独写一本网络小说，但是不得不说，这本书对于我来说还是有一点触动，《将夜》听起来就是一个挺玄幻的的名字，然后又是一个老套的穿越故事，但是相比于其他老套的穿越故事，这个故事还是有那么一点点的不同。不同之处在于每一个人对于命运都有着自己的看法和坚持，每个人都看不清未来，所以每个人都为了那未知的未来而努力而奋斗。<br>很多时候我们其实没有选择，无法选择我们的出生，无法选择很多很多事情，但是有些事情又是可以选择的，比如未来，比如改变。有时候觉得人生太短暂了，短短的几十年，似乎突然就过去了，可是如果我们活得足够长我们会怎样呢？身边的人都与自己渐行渐远，自己孑然一身存活在这个世界上，人们在没有了生存的压力后总是要寻找生活的意义，或者说生命的意义，那么这个问题就很哲学了，我们究竟为了什么而生活，而真正的生活又是什么样子？<br>每每回顾自己这么多年的生活，都会感慨自己这么多年来其实一直是挺顺利的，虽然没有取得让人瞩目的成就，也并没有落到多么不堪的境地，所以有时候会想，这样的生活究竟是好呢还是不好呢，总会在心里有这样或那样的疑惑。不多说自己的感慨了，还是谈谈书的内容吧，相比于一些网络爽文，这本书算是一本比较好的书了。书院中的人都是出世的人，而书的主角算是一个在世俗中摸爬滚打的人，对于我来说，出世就是我们对于世俗的迎合，我们可以压抑自己的欲望，克制自己的痛苦，底下我们的头，只是为了生活，但是在我们心中也有那些坚持，坚持仁！坚持理！坚持爱和希望。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;也许不应该在读了这么多书严肃文学的情况下去单独写一本网络小说，但是不得不说，这本书对于我来说还是有一点触动，《将夜》听起来就是一个挺玄幻的的名字，然后又是一个老套的穿越故事，但是相比于其他老套的穿越故事，这个故事还是有那么一点点的不同。不同之处在于每一个人对于命运都有着自己
-      
-    
-    </summary>
-    
-      <category term="书评" scheme="http://www.wuweiblog.com/categories/%E4%B9%A6%E8%AF%84/"/>
-    
-    
-      <category term="将夜,书评" scheme="http://www.wuweiblog.com/tags/%E5%B0%86%E5%A4%9C-%E4%B9%A6%E8%AF%84/"/>
     
   </entry>
   
