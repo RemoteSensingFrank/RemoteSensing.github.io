@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.wuweiblog.com/"/>
-  <updated>2019-04-16T14:52:52.836Z</updated>
+  <updated>2019-06-03T09:45:20.047Z</updated>
   <id>http://www.wuweiblog.com/</id>
   
   <author>
@@ -15,6 +15,43 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>视差理解</title>
+    <link href="http://www.wuweiblog.com/2019/05/26/%E8%A7%86%E5%B7%AE%E7%90%86%E8%A7%A3/"/>
+    <id>http://www.wuweiblog.com/2019/05/26/视差理解/</id>
+    <published>2019-05-26T07:17:57.000Z</published>
+    <updated>2019-06-03T09:45:20.047Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;为了说明什么是视差我特意画了下面一张图，虚线为辅助线，为了方便理解和计算，其中X为物方坐标，也就是空间中的一个点，Z为深度，f为焦距，对于点X在像平面上成的点分别为 $x$ 与 $x’$如下图：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E8%A7%86%E5%B7%AE%E7%A4%BA%E6%84%8F%E5%9B%BE.JPG?q-sign-algorithm=sha1&q-ak=AKIDKw07A0GWOXesL566U946vBTGY67TVRYl&q-sign-time=1558881330;1558883130&q-key-time=1558881330;1558883130&q-header-list=&q-url-param-list=&q-signature=74dcaf81ca045b8ce0bbc9d68ad28e16c17a0dee&x-cos-security-token=3897917274b469b893340d494453c417680cdd6410001">  </p><h2 id="1-视差定义与公式"><a href="#1-视差定义与公式" class="headerlink" title="1. 视差定义与公式"></a>1. 视差定义与公式</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;首先说一下视差的定义，我们所说的<a href="https://baike.baidu.com/item/%E8%A7%86%E5%B7%AE/4160990?fr=aladdin" target="_blank" rel="noopener">视差</a>就是从有一定距离的两个点上观察同一个目标所产生的方向差异，我们在摄影测量的视差图中所指的视差通常指的是左右视差而不是上下视差，<a href="https://baike.baidu.com/item/%E5%B7%A6%E5%8F%B3%E8%A7%86%E5%B7%AE/373299" target="_blank" rel="noopener">左右视差</a>为立体像对上同名像点横座标之差，若两个相机已经校正完成即达到极线平行，两条光轴方向也平行。则视差和物体深度的关系式(1)：<br>$$<br>\operatorname{dsparity}^{\prime} y=T_1x-T_2x^{\prime}=\frac{B f}{Z}  (1)<br>$$<br>为了说明式(1)的来历，我们做了一条$OX$的平行线过$O’$则$T_1x=T_2T_3$则根据三角形相似的原理我们可以推导出式(1)，在此基础上，假设视差已知，则深度计算为：<br>$$<br>Z=\frac{B <em> f}{T_1x-T_2x^{\prime}}=\frac{B </em> f}{d} （2）<br>$$<br>其中d为视差值，在成像过程中B与f都是常量，因此深度只与d有关，深度Z与视差d成反比关系，因此可以得出结论：<strong>视差越大则深度越小，则物点距离像平面坐标越近</strong>。</p><h2 id="2-视差计算方法"><a href="#2-视差计算方法" class="headerlink" title="2. 视差计算方法"></a>2. 视差计算方法</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;视差的计算是计算深度图的一个基础，从openCV中有一些部分是专门进行相机标定和视差计算的，我们把视差计算称为<strong>Stereo Matching</strong>，由上面描述的视差的定义与公式中可以了解到，视差的计算实际上有一个基础，那就是两张图像的同名点在同一水平线上，即图像的y坐标相同，为了达到以上效果，在视差计算前我们首先进行极线校正，首先通过sift算子解算得到匹配点，进而解算出影像之间的<a href="https://baike.baidu.com/item/%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89%E4%B8%AD%E7%9A%84%E5%A4%9A%E8%A7%86%E5%9B%BE%E5%87%A0%E4%BD%95/8726537?fr=aladdin" target="_blank" rel="noopener">基础矩阵$F$与本质$E$</a>，注意到我们说的两个矩阵，两个矩阵实际上都是与极线相关的，图像上一个点乘以这个点的本质矩阵可以得到这个点在另一张图像上的极线方程，具体介绍可以参考<strong>计算机视觉中的多视图几何</strong>这本神书，建议阅读英文原版。求出基础矩阵与本质矩阵后就可以进行<a href="http://www.cs.ait.ac.th/~mdailey/cvreadings/Hartley-Rectify.pdf" target="_blank" rel="noopener">极线校正</a>，实际上分两种一种是没有经过内定标采用$F$举证进行的校正，另一种是采用$E$矩阵分接出R和T进行的校正在这里不多说。假设图像已经经过极线校正，则图像的y坐标应该相同，那么我们可以进行视差图计算，在视差图计算的过程中比较重要的一点是进行密集匹配，流行的密集匹配方法有BM方法、SGBM方法、GC方法等，在openCV中实现了前两种，因此我们在这里只讨论前两种方法  </p><h3 id="2-1-BM方法"><a href="#2-1-BM方法" class="headerlink" title="2.1 BM方法"></a>2.1 BM方法</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;BM方法，全称为<strong>Block Matching methods</strong>，方法说起来比较简单，我们可以通过一张示意图来描述：</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;为了说明什么是视差我特意画了下面一张图，虚线为辅助线，为了方便理解和计算，其中X为物方坐标，也就是空间中的一个点，Z为深度，f为焦距，对于点X在像平面上成的点分别为 $x$ 与 $x’$如下图：&lt;br&gt;&lt;img src=&quot;ht
+      
+    
+    </summary>
+    
+      <category term="数学" scheme="http://www.wuweiblog.com/categories/%E6%95%B0%E5%AD%A6/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>激光点云处理工具介绍</title>
+    <link href="http://www.wuweiblog.com/2019/04/21/%E6%BF%80%E5%85%89%E7%82%B9%E4%BA%91%E5%A4%84%E7%90%86%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D/"/>
+    <id>http://www.wuweiblog.com/2019/04/21/激光点云处理工具介绍/</id>
+    <published>2019-04-21T13:18:16.000Z</published>
+    <updated>2019-04-21T13:18:16.324Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
   
   <entry>
     <title>燃烧的巴黎圣母院</title>
@@ -69,12 +106,21 @@
     <link href="http://www.wuweiblog.com/2019/01/06/%E7%8C%9D%E6%AD%BB/"/>
     <id>http://www.wuweiblog.com/2019/01/06/猝死/</id>
     <published>2019-01-06T03:38:02.000Z</published>
-    <updated>2019-01-06T03:38:02.966Z</updated>
+    <updated>2019-06-25T03:11:31.813Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;最近很多新闻都在说年轻人猝死的问题，最近好像胃也不太好，所以也一直关注着这个问题。然后很多资本家的言论在网上发酵，什么996是福报呀之类的言论，然后Github上也发起了抵制996的活动。不得不说现实对于当代年轻人来说真的算不上友好，当然用父母辈的话来说我们似乎是一个最好的时代，但是其实“这是最好的时代，也是最坏的时代”——《双城记》<br>&nbsp;&nbsp;&nbsp;&nbsp;生产力的发展让我们早已远离了父辈所面临的问题，站在父辈的肩膀上的我们生来就不需要考虑如何吃饱，如何穿暖的问题，当生存问题离我们远去的时候在父辈们看来这恐怕就是最好的时代了。但是现实可能与理想存在一些差距，时代的发展永远都会导致一个现象那就是马太效应，虽然人们总是在说纺锤型社会，其实所谓的纺锤型社会只是一种理想状况而已。随着时间的推移，资源会不断的集中于少部分人手中，然后出现金字塔形社会，而且是一个很分明的金字塔，金字塔上下层之间存在着明确的割裂，上层不需要看到下层的情况，下层也无法理解和想象上层的生活。如果一直都是这样倒也罢了，在几千年的社会中一直都是这样，其实我们都知道“已有之事，后必再有，已行之事，后必再行，日光之下并无新事”——《圣经.传道书 v1:9》<br>&nbsp;&nbsp;&nbsp;&nbsp;可是我们国家近二三十年来发展太快，社会主义市场经济形同乱世，既然是乱世那么总是容易产生那么一些人，他们凭借着各种方式或手段实现了从金字塔底层到金字塔上层的跃迁，乱世总是容易让人产生错觉，让人觉得自己也是天选之子。如果经济的发展一如从前，或许我们也不会觉得有什么不一样，但是如同前二三十年那样的发展是不可持续的，是社会生活的非常态，社会的发展总是要回到常态，而由非常态转换到常态的这个过程就是一个割裂的过程，社会顶层与下层割裂的过程。由于资源的集中，处于社会顶层的群里往往掌握着较大的话语权，于是“你不行是因为你不努力！”，“只要努力就能实现阶层跃迁！”这样的言论甚嚣尘上。实际上资本的原始积累是血腥而且残酷的，不是流血便是流泪。我们当然无法否认努力的意义，但是实际上阶层的割裂便是要让我们的努力变得不那么重要。而我们正好处于这个割裂的时代，这个时代的割裂一直拉扯着我们。<br>&nbsp;&nbsp;&nbsp;&nbsp;对于我们来说也许只有两种选择，待在原地一定会被拉扯得粉碎，所以只能拼命工作以求得能够获取阶层的提升而不被彻底的隔离，上升的通道越来越窄，由此导致的社会内卷是明显可见的，而那些猝死的年轻人用他们的死来表现出他们的抗争，也许确实有些事情比死生更重要吧，可是如果死亡只是为这个时代陪葬，那可能我更愿意就这样浑浑噩噩的活着算了。</p>]]></content>
     
     <summary type="html">
     
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;最近很多新闻都在说年轻人猝死的问题，最近好像胃也不太好，所以也一直关注着这个问题。然后很多资本家的言论在网上发酵，什么996是福报呀之类的言论，然后Github上也发起了抵制996的活动。不得不说现实对于当代年轻人来说真的算不
+      
+    
     </summary>
     
+    
+      <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
     
   </entry>
   
@@ -448,56 +494,6 @@
     
     
       <category term="潜规则,书评" scheme="http://www.wuweiblog.com/tags/%E6%BD%9C%E8%A7%84%E5%88%99-%E4%B9%A6%E8%AF%84/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>tensorflow-二十七弹</title>
-    <link href="http://www.wuweiblog.com/2018/08/22/tensorflow-%E4%BA%8C%E5%8D%81%E4%B8%83%E5%BC%B9/"/>
-    <id>http://www.wuweiblog.com/2018/08/22/tensorflow-二十七弹/</id>
-    <published>2018-08-22T10:19:38.000Z</published>
-    <updated>2019-01-06T03:50:53.876Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;tensorflow的学习进行到这个阶段，实际上已经处于一个入门阶段了，在前面的学习过程中我们着重介绍了CNN的构造以及实现过程，另外也提及了一些关于爬虫的知识以及一些关于机器学习的数学基础，现在感觉整个CNN的过程已经掌握得差不多了，剩下就是各种CNN网络得实现了，这个实际上就跟拼接积木差不多了，是一些调参得过程，其中如果进行深入的数学分析就太复杂了，所以在这里先放一放，先接触一下其他的类型的深度网络，然后再回来研究网络的构造问题，下面主要进行RNN的学习:</p><blockquote><p>RNN:循环神经网络，Recurrent Neural Network。神经网络是一种节点定向连接成环的人工神经网络。这种网络的内部状态可以展示动态时序行为。不同于前馈神经网络的是，RNN可以利用它内部的记忆来处理任意时序的输入序列，这让它可以更容易处理如不分段的手写识别、语音识别等。——百度百科</p></blockquote><p>&nbsp;&nbsp;&nbsp;&nbsp;实际上RNN更重要的作用应该是对于语义的识别，百度百科的定义我们看看就行了。本次学习以及代码参考一下文章以及博客(如有侵权，联系删除)：<br><a href="https://blog.csdn.net/liuchonge/article/details/70809288" target="_blank" rel="noopener">使用TensorFlow实现RNN模型入门篇1</a><br><a href="http://lib.csdn.net/article/aiframework/66348?knId=1756" target="_blank" rel="noopener">RNN入门详解及TensorFlow源码实现–深度学习笔记</a><br><a href="http://www.wildml.com/2015/09/recurrent-neural-networks-tutorial-part-1-introduction-to-rnns/" target="_blank" rel="noopener">Recurrent Neural Networks Tutorial, Part 1 – Introduction to RNNs</a><br><a href="https://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html" target="_blank" rel="noopener">Recurrent Neural Networks in Tensorflow I</a><br><a href="http://www.wildml.com/2015/09/recurrent-neural-networks-tutorial-part-2-implementing-a-language-model-rnn-with-python-numpy-and-theano/" target="_blank" rel="noopener">Recurrent Neural Networks Tutorial, Part 2 – Implementing a RNN with Python, Numpy and Theano</a></p><h2 id="什么是RNN"><a href="#什么是RNN" class="headerlink" title="什么是RNN"></a>什么是RNN</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;既然要学习RNN，那么我们就得先了解一下到底什么是RNN，实际上RNN被创造得目的在于充分利用序列数据的前后文信息。在传统的神经网络中假设没一次的输入和输入（每一次训练）是独立的，但是实际上在生活中我们面对很多问题的时候都会有一个上下文的关系，比如写文章之类的。我们语句的不同输入顺序可能有完全不同的意思，RNN就是来处理这样的问题的。另外我们从另一个角度来思考RNN，也就是我们通常说的记忆，意思就是能够从以前所有的输入数据中提取信息。理论上来说RNN能从记忆无限长时间的信息，但是在实际应用过程中会限制回溯的步长。<br>这里要祭出那张经典的图了：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/rnn.JPG"><br>&nbsp;&nbsp;&nbsp;&nbsp;这张被引用过无数次的图很形象的说明了RNN的过程，实际上左边是RNN的过程，右边是RNN展开的过程，如果我们关心五个单词的句子，整个网络就可以展开成一个五层的神经网络，每个单词就是一层，整个结构为：</p><blockquote><ul><li>$x_t$ is the input at time step $t$. For example, $x_1$ could be a one-hot vector corresponding to the second word of a sentence.  </li><li>$s_t$ is the hidden state at time step t. It’s the “memory” of the network. s_t is calculated based on the previous hidden state and the input at the current step: $s_t=f(Ux_t + Ws_{t-1})$. The function f usually is a nonlinearity such as tanh or ReLU.  $s_{-1}$, which is required to calculate the first hidden state, is typically initialized to all zeroes.  </li><li>$o_t$ is the output at step t. For example, if we wanted to predict the next word in a sentence it would be a vector of probabilities across our vocabulary. $o_t = \mathrm{softmax}(Vs_t)$.  </li></ul></blockquote><p>&nbsp;&nbsp;&nbsp;&nbsp;上面就是几个参数的说明，实际上比较简单也就没有必要再翻译了，看看就好了，下面就上面这个过程做一个简单的说明：  </p><ol><li>实际上可以认为$s_t$是一个记忆网络，能够记录以前所有的信息，而输出层$o_t$的计算仅依赖于时刻$t$的记忆，但是实际情况会复杂一些，因为$s_t$并不能记忆住前面太多步的信息（实际上也没有必要记住前所有步的信息）  </li><li>RNN实际上展开后每一层都是共享的同一参数，所不同的仅仅是输入值，通过此种方式极大的减小了参数的数目（序列输入，输入网络层数可能极大）</li><li>实际上对于部分应用来说不是所有的中间输出步骤都是有效的，我们仅仅关心最后的输出，同样对于输入我们也不需要关心每次的输入，RNN的主要特征是它的隐藏状态，这些隐藏状态可以获取序列数据的信息。</li></ol><h2 id="RNN的应用"><a href="#RNN的应用" class="headerlink" title="RNN的应用"></a>RNN的应用</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;这里就随便谈谈了，实际上RNN做的最多的还是语义理解以及机器翻译工作，最常用的RNN模型问LSTM。具体的介绍参看<a href="http://www.wildml.com/2015/09/recurrent-neural-networks-tutorial-part-1-introduction-to-rnns/" target="_blank" rel="noopener">Recurrent Neural Networks Tutorial, Part 1 – Introduction to RNNs</a></p><h3 id="语言模型"><a href="#语言模型" class="headerlink" title="语言模型"></a>语言模型</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;假设有一个m个字母的句子，我们建立如下一个语言模型去预测一个句子出现的可能性：<br>$$\begin{aligned}  P(w_1,…,w_m) = \prod_{i=1}^{m} P(w_i \mid w_1,…, w_{i-1})  \end{aligned}$$<br>&nbsp;&nbsp;&nbsp;&nbsp;通俗的来说，一个句子出现的可能性就是每个单词在它之前单词出现后可能性的后验概率的乘积。语言模型的重要之处在于可以通过语言模型形成一个打分机制，在机器翻译等工作中可以被用来选择最佳的翻译方式。语言模型的另外一个作用在于句式生成，如果我们有了足够丰富的句子，则我们可以通过构建好的语言模型生成句式。从上面的模型可以看出每一个单词生成的可能性都取决于其之前的所有单词，实际上很多模型都并不需要或者说从内存和计算时间的角度来说都无法关注到这么长远的记忆，因此我们会限制记忆的长度，并且对不同时长的记忆给不同大小的权重进行约束。</p><h2 id="RNN实现"><a href="#RNN实现" class="headerlink" title="RNN实现"></a>RNN实现</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;好了以上就是RNN的一些介绍，以及其的应用，为了更加快速的入门RNN，我们通过tensorflow构建一个简单的网络对我们生成的简单数据进行训练。</p><h3 id="训练数据集的说明"><a href="#训练数据集的说明" class="headerlink" title="训练数据集的说明"></a>训练数据集的说明</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;输入序列数据X：在第$t$步，$X_t$有百分之五十的可能性为1，另外百分之五十可能性为0，则$X$可能为$[1,0,0,1,1,1…]$<br>输出序列数据Y：对于任意第$t$步，$Y_t$有百分之五十的可能性为1，如果$X_{t-3}$步为1，则$Y_t$为1的可能性增加百分之50，如果$X_{t-8}$步为1，则$Y_t$为1的可能性下降百分之25%，通过这样的模式就确定了输出数据不仅和当前的输入有关，还与前几次的输入情况有关系；这样的一个网络实际上算是比较简单的网络结构了，我们根据以上生成的数据进行模型的构建。</p><h3 id="模型构建"><a href="#模型构建" class="headerlink" title="模型构建"></a>模型构建</h3><p>&nbsp;&nbsp;&nbsp;&nbsp;对于上面描述的这个简单问题，模型构建就很简单了,实际上对于一个模型来说我们首先要考虑的就是他的输入和输出问题，对于RNN模型我们输入是一个0或1的数据$X_t$以及上一个状态矢量$S_{t-1}$,输出$S_t$为可能性分布矢量，$P_t$是输出结果的预测，则有如下公式：<br>$$<br>\begin{aligned}<br>&amp;S_t=tanh(W(X_t\cdot S_{t-1})+b_s)\<br>&amp;P_t=softmax(US_t,+b_p)<br>\end{aligned}<br>$$<br>@表示向量的组合，$X_t$是一个二进制编码向量，$W$，$b_s$，$U$分别为状态矩阵，严格的来说应该证明为什么迭代就能够收敛到正确解，实际上对预测结果求导，然后导数为0分析其收敛特征，但是一般来说神经网络对于我们来说是一个黑盒过程，所以我们不太关心其背后的数学原理，假设能够收敛，则整个模型为:  </p><center><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/RNNsimple.JPG"></center>  <p>&nbsp;&nbsp;&nbsp;&nbsp;上图应该是比较好理解的图，$S_{-1}$为初始状态，可以都为0，然后进行循环计算，实际上训练过程有一个回溯的过程，我们在RNN的数学基础中再去讨论RNN的反向传播过程以及设置记忆长度为多少才合适的问题，现在我们只讲RNN的构造，RNN的构造主要是构造一个RNN_Cell然后复用就好了，主要代码为：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">x = tf.placeholder(tf.int32, [batch_size, num_steps], name=<span class="string">'input_placeholder'</span>)</span><br><span class="line">y = tf.placeholder(tf.int32, [batch_size, num_steps], name=<span class="string">'labels_placeholder'</span>)</span><br><span class="line"><span class="comment">#RNN的初始化状态，全设为零。注意state是与input保持一致，接下来会有concat操作，所以这里要有batch的维度。即每个样本都要有隐层状态</span></span><br><span class="line">init_state = tf.zeros([batch_size, state_size])</span><br><span class="line"></span><br><span class="line"><span class="comment">#将输入转化为one-hot编码，两个类别。[batch_size, num_steps, num_classes]</span></span><br><span class="line">x_one_hot = tf.one_hot(x, num_classes)</span><br><span class="line"><span class="comment">#将输入unstack，即在num_steps上解绑，方便给每个循环单元输入。这里可以看出RNN每个cell都处理一个batch的输入（即batch个二进制样本输入）</span></span><br><span class="line">rnn_inputs = tf.unstack(x_one_hot, axis=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#定义rnn_cell的权重参数，</span></span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'rnn_cell'</span>):</span><br><span class="line">    W = tf.get_variable(<span class="string">'W'</span>, [num_classes + state_size, state_size])</span><br><span class="line">    b = tf.get_variable(<span class="string">'b'</span>, [state_size], initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line"><span class="comment">#使之定义为reuse模式，循环使用，保持参数相同</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">rnn_cell</span><span class="params">(rnn_input, state)</span>:</span></span><br><span class="line">    <span class="keyword">with</span> tf.variable_scope(<span class="string">'rnn_cell'</span>, reuse=<span class="keyword">True</span>):</span><br><span class="line">        W = tf.get_variable(<span class="string">'W'</span>, [num_classes + state_size, state_size])</span><br><span class="line">        b = tf.get_variable(<span class="string">'b'</span>, [state_size], initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line">    <span class="comment">#定义rnn_cell具体的操作，这里使用的是最简单的rnn，不是LSTM</span></span><br><span class="line">    <span class="keyword">return</span> tf.tanh(tf.matmul(tf.concat([rnn_input, state], <span class="number">1</span>), W) + b)</span><br><span class="line"></span><br><span class="line">state = init_state</span><br><span class="line">rnn_outputs = []</span><br><span class="line"><span class="comment">#循环num_steps次，即将一个序列输入RNN模型</span></span><br><span class="line"><span class="keyword">for</span> rnn_input <span class="keyword">in</span> rnn_inputs:</span><br><span class="line">    state = rnn_cell(rnn_input, state)</span><br><span class="line">    rnn_outputs.append(state)</span><br><span class="line">final_state = rnn_outputs[<span class="number">-1</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment">#定义softmax层</span></span><br><span class="line"><span class="keyword">with</span> tf.variable_scope(<span class="string">'softmax'</span>):</span><br><span class="line">    W = tf.get_variable(<span class="string">'W'</span>, [state_size, num_classes])</span><br><span class="line">    b = tf.get_variable(<span class="string">'b'</span>, [num_classes], initializer=tf.constant_initializer(<span class="number">0.0</span>))</span><br><span class="line"><span class="comment">#注意，这里要将num_steps个输出全部分别进行计算其输出，然后使用softmax预测</span></span><br><span class="line">logits = [tf.matmul(rnn_output, W) + b <span class="keyword">for</span> rnn_output <span class="keyword">in</span> rnn_outputs]</span><br><span class="line">predictions = [tf.nn.softmax(logit) <span class="keyword">for</span> logit <span class="keyword">in</span> logits]</span><br><span class="line"></span><br><span class="line"><span class="comment"># Turn our y placeholder into a list of labels</span></span><br><span class="line">y_as_list = tf.unstack(y, num=num_steps, axis=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment">#losses and train_step</span></span><br><span class="line">losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(labels=label, logits=logit) <span class="keyword">for</span> \</span><br><span class="line">          logit, label <span class="keyword">in</span> zip(logits, y_as_list)]</span><br><span class="line">total_loss = tf.reduce_mean(losses)</span><br><span class="line">train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)</span><br></pre></td></tr></table></figure></p><p>&nbsp;&nbsp;&nbsp;&nbsp;从以上代码可以看出，输入有$n$个单元，其中$n$为我们记忆回溯的步长，state_size为隐藏层的状态向量，长度根据需求和输入确定，我们直接看核心部分rnn_cell函数，这个函数定义了RNN的核心运算，首先是W和b的定义，然后是定义运算，整个运算过程为：tf.tanh(tf.matmul(tf.concat([rnn_input, state], 1), W) + b)，实际上就是公式中所提到的，这里有一个concat运算，这个运算时将两个矩阵进行连接，由于最开始的时候已经将编码方式转换为了one-hot编码，one-hot编码实际上意思就是采用你一个0-1的向量来对参数进行编码，组成一个参数矩阵，具体的解释可以参考<a href="https://blog.csdn.net/tengyuan93/article/details/78930285" target="_blank" rel="noopener">OneHot编码知识点</a>，通过这样的编码方式编码成可理解的向量，然后通过unstack解绑，得到每一个batch每一个step的输入，最后通过循环填充数据，然后定义输出层与中间层的W与b，进行误差的估计并采用AdagradOptimizer（随机梯度下降）的方法进行迭代。好了，整个过程就介绍到这里，下面一节就准备对RNN的数学基础进行学习。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;tensorflow的学习进行到这个阶段，实际上已经处于一个入门阶段了，在前面的学习过程中我们着重介绍了CNN的构造以及实现过程，另外也提及了一些关于爬虫的知识以及一些关于机器学习的数学基础，现在感觉整个CNN的过程已经掌握得
-      
-    
-    </summary>
-    
-      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    
-      <category term="tensorflow学习" scheme="http://www.wuweiblog.com/tags/tensorflow%E5%AD%A6%E4%B9%A0/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>tensorflow-二十八弹</title>
-    <link href="http://www.wuweiblog.com/2018/08/22/tensorflow-%E4%BA%8C%E5%8D%81%E5%85%AB%E5%BC%B9/"/>
-    <id>http://www.wuweiblog.com/2018/08/22/tensorflow-二十八弹/</id>
-    <published>2018-08-22T10:19:38.000Z</published>
-    <updated>2019-01-06T06:11:49.803Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;上一次的学习过程中介绍了RNN,然后列举了它的流程以及理解，然后运行代码试了一下，有了一个直观的体会，但是代码的逻辑实际上还是比较奇怪，而且列出的公式也不直观，实际上在27弹中所提到了公式是进行简化了的公式，所以看起来会比较复杂一些，这次在深入理解之后重新梳理了一下，然后把公式串起来。  </p><center><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/rnn.JPG"></center><br> &nbsp;&nbsp;&nbsp;&nbsp;还是上面这张图，这张图其实描述得有点含糊，为了更清晰得说明情况我再加上一张图进行说明：<br> <center><img src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1546757744614&di=4926294d374c6a407cf7834d94e55872&imgtype=0&src=http%3A%2F%2Fcrawler-fs.intsig.net%2Fcamfs%2Fdownload%3Ffilename%3D10005_d3ec5886a98e02c3a4077f619ac99734_4.gif"></center>  <p> &nbsp;&nbsp;&nbsp;&nbsp;上图来自网络，<a href="wuweiBlog.com">侵删联系</a>。把两张图结合起来看就比较好了，实际上对于一个序列输入$[x_1,x_2…x_n]$来说再训练得时候其实不必要关心每次得输入对应得输出，我们更关心的是最后的输入和输出结果。所以对于每一步实际上最重要的是中间层，从两个图中我们可以得到中间层的计算方法,为了统一我们公式表示都参考第一张图，其中$s_t$为中间层：<br>$$<br>s_t=f(W<em>s_{t-1}+U</em>x_t+b)(1)<br>$$<br>&nbsp;&nbsp;&nbsp;&nbsp;公式(1)中$s_t$为当前状态的隐含层，$W$为上一个隐含层到当前隐含层的权重，$U$为输入到隐含层的权重。这样我们就得到了从输入到隐含层的计算方式，然后我们从隐含层到输出：<br>$$<br>o_t=g(V*s_t+c)(2)<br>$$<br>&nbsp;&nbsp;&nbsp;&nbsp;在公式(2)中$o_t$为输出结果，$V$为输入到输出的权重，然后我们就得到了整个卷积神经网络的经典公式。对比上次给出的公式：<br><strong>二十七弹中的公式为</strong>：</p><p>$$<br>\begin{aligned}<br>&amp;S_t=f(W(X<em>t@ S</em>{t-1})+b)(3)\<br>&amp;O_t=g(US_t,+c)(4)<br>\end{aligned}<br>$$<br>&nbsp;&nbsp;&nbsp;&nbsp;从比较中可以看出实际上主要的差别集中在(1)和(3)上，实际上在二十七弹中给出的公式是简化公式，我们可以把式(1)写成如下形式:<br>$$<br>s_t=f([W,U]\cdot[s_{t-1},x_t]’+b))(5)<br>$$<br>&nbsp;&nbsp;&nbsp;&nbsp;对于式(5)其实就是将$W$与$U$合并为一个矩阵再将$s_{t-1},x_t$合并，其中$@$符号就是矩阵合并的符号，由于python矩阵合并计算相对比较简单因此采用简化公式能够减小编码量，但是却增大的理解的负担；实际上序列不可能无限长，因此每次都是截取一定长度的序列进行计算，由此产生了step参数。<br>&nbsp;&nbsp;&nbsp;&nbsp;实际上经典的RNN已经了解了，但是在应用过程中RNN存在很多变化比如以下几种图的变化：<br> <center><img src="https://pic1.zhimg.com/v2-6caa75392fe47801e605d5e8f2d3a100_r.jpg"><br> 图1.多个输入对应一个输出<br> <img src="https://pic3.zhimg.com/80/v2-87ebd6a82e32e81657682ffa0ba084ee_hd.jpg"><br> 图2.一个输入对应多个输出<br>  <img src="https://pic4.zhimg.com/80/v2-77e8a977fc3d43bec8b05633dc52ff9f_hd.jpg"><br>图3.自编码解码器<br> </center><br> &nbsp;&nbsp;&nbsp;&nbsp;以上三种是RNN中除了输入与输出等长之外最常见的三种模式了，实际上前两种都比较简单，对于多个输入对应一个输出的模式，只需要在最后一个输出上对应进行变换就好了。而对于多个输出对应一个输入的只需要对最开始的输入进行变换。整个结构没有变化过程也比较简单，单独把最后或者第一次的输入或者输出抽取出来就好了；对于多个输入对应一个输出的情况一般都是在语义的识别中，比如输入一个语句判断其情感倾向等。一个输入对应多个输出情况就比较多，比如输入第一画自动绘制，输入描述自动生成文字图片等都属于这一类。第三类是最重要的一个部分，我们叫自编码器；实际上就是根据输入得到一个输入的编码对于不同的输入都能够得到统一的编码形式使得输入数据能够统一，另外编码也能够包含输入的所有信息。编码的形式有很多种，可以直接输出最后一个隐藏状态，也可以对最后一个隐藏状态进行变换或者对所有隐藏状态进行变换得到结果。得到这个结果我们就认为是对序列输入的编码结果，而过程中的参数实际上就是编码器。有编码过程就一定有一个解码过程，解码过程就是由c得到各个输出的过程。解码实际上也是一个RNN网络，这个网络的结构就是图2中提到的多个输入对应一个输出的结构。然后训练出一个网络。这样就得到了两个网络，这一组网络我们就称为编码-解码器。编码器的优点在于不对输入和输出的长度进行限制，因此被广泛的应用。<a href="https://zhuanlan.zhihu.com/p/28054589" target="_blank" rel="noopener">参考内容</a><br> &nbsp;&nbsp;&nbsp;&nbsp;通过这次学习解决了上次遗留的一些问题，同时对RNN的结构进行了归纳，同时对编码器进行了理解，实际上通过这个结构对自编码器就能够很好的理解了。通过学习编码形式得到输出和其本身对接近的编码器和解码器从而实现对数据的抽象，对于小样本的学习来说通过自编码的形式能够对数据进行更高层次的抽象，在此基础上通过少量的样本可以达到很好的学习效果。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;上一次的学习过程中介绍了RNN,然后列举了它的流程以及理解，然后运行代码试了一下，有了一个直观的体会，但是代码的逻辑实际上还是比较奇怪，而且列出的公式也不直观，实际上在27弹中所提到了公式是进行简化了的公式，所以看起来会比较复
-      
-    
-    </summary>
-    
-      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
-    
-    
-      <category term="tensorflow学习" scheme="http://www.wuweiblog.com/tags/tensorflow%E5%AD%A6%E4%B9%A0/"/>
     
   </entry>
   
