@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.wuweiblog.com/"/>
-  <updated>2019-06-03T09:45:20.047Z</updated>
+  <updated>2019-07-21T04:37:20.234Z</updated>
   <id>http://www.wuweiblog.com/</id>
   
   <author>
@@ -15,6 +15,45 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>酷炫的动态图</title>
+    <link href="http://www.wuweiblog.com/2019/07/21/%E9%85%B7%E7%82%AB%E7%9A%84%E5%8A%A8%E6%80%81%E5%9B%BE/"/>
+    <id>http://www.wuweiblog.com/2019/07/21/酷炫的动态图/</id>
+    <published>2019-07-21T04:14:37.000Z</published>
+    <updated>2019-07-21T04:37:20.234Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;以前总是看到别人开发的GIS软件上有很多酷炫的效果，虽然没有什么实际上的功能，但是看起来真的是很酷炫了，有时候自己就想怎么才能做到这么酷炫的效果呢，直到我遇到Echart这个图标工具，通过这个图标工具就可以做到很酷炫的动态图效果了，通过合适的动态图效果能够为我们软件增色不少。<br>&nbsp;&nbsp;&nbsp;&nbsp;首先我们需要一个js控件，叫eschartLayer.js可以直接放入ArcGIS SDK进行应用，也可以配置dojo进行引用，具体的引用方法在这里就不进行介绍了，在这里主要介绍一下这个控件的思路，具体的做法就是在地图层之上添加一个Div的遮罩层，这一层为Echart图表，然后坐标为当前数据显示范围，然后在这个基础上进行绘制，；利用Echart的图标添加各种动态效果，实际上动态效果就是根据Echart的配置功能进行配置，通过这样的方式实现地图动态效果的叠加。我们首先可以参看这个控件的<a href="https://github.com/slobber/arcgis-4-with-echarts-4" target="_blank" rel="noopener">Github地址</a>,通过他的例子可以看到一些迁徙图的动态效果，但是这些迁徙图动态效果都是点与点之间的，那么基于这个东西我就在思考，能不能做一个将ArcGIS Feature Layer转换为可展示数据的功能呢，为了实现这个目标，我写了两个函数:<br><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">*  数据转换方法，将查询到的Feature数据转换为Echart图表展示的形式</span></span><br><span class="line"><span class="comment">*  将Feature数据转换为Echart能够展示的点图层数据进行展示</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">FeaturesConvertToPoints</span>(<span class="params">features,type</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">var</span> data=[];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>;i&lt;features.length;++i)&#123;</span><br><span class="line">    <span class="keyword">if</span>(features[i].geometry.type==<span class="string">'point'</span>)&#123;</span><br><span class="line">        data.push(&#123;</span><br><span class="line">        type:type,</span><br><span class="line">        value:[features[i].geometry.longitude,features[i].geometry.latitude]</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">if</span>(features[i].geometry.type==<span class="string">'polygon'</span>)&#123;</span><br><span class="line">        data.push(&#123;</span><br><span class="line">        type:type,</span><br><span class="line">        value:[features[i].geometry.centroid.longitude,features[i].geometry.centroid.latitude]</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> data;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">*  数据转换方法，将查询到的Feature数据转换为Echart图表展示的形式</span></span><br><span class="line"><span class="comment">*  将Feature数据转换为Echart能够展示的线数据</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">FeatureConvertToLines</span>(<span class="params">features</span>)</span>&#123;</span><br><span class="line">    <span class="keyword">var</span> data=[];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">var</span> i=<span class="number">0</span>;i&lt;features.length;++i)&#123;</span><br><span class="line">    <span class="keyword">if</span>(features[i].geometry.type==<span class="string">'polyline'</span>)&#123;</span><br><span class="line">        <span class="keyword">var</span> paths = features[i].geometry.paths;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">var</span> j=<span class="number">0</span>;j&lt;paths.length;++j)&#123;</span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">var</span> k=<span class="number">0</span>;k&lt;paths[j].length<span class="number">-1</span>;++k)&#123;</span><br><span class="line">            data.push(&#123;</span><br><span class="line">            fromName:<span class="string">""</span>,</span><br><span class="line">            toName:<span class="string">""</span>,</span><br><span class="line">            coords:[paths[j][k],paths[j][k+<span class="number">1</span>]]</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">return</span> data;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p><p>&nbsp;&nbsp;&nbsp;&nbsp;其实上面两段代码都比较简单，第一段代码是将点和面数据转换为Echart能够显示的散点图的散点信息，第二段代码为将线数据转换为可展示的线段的信息，在这里就要说一下ArcGIS的线数据存储格式了，线数据是按照Feature-&gt;paths-&gt;Points这个层级关系来进行存储的，首选获取Feature，然后获取Paths以及之下的点数据，为了实现点数据转换为Echart的格式，需要将点数据进行一些转换，然后在Echart中的Series的数据中对数据进行添加，展示效果为：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E7%BA%BF%E8%B7%AF%E5%8A%A8%E6%80%81%E5%B1%95%E7%A4%BA.gif" alt="动态线路数据展示">,如果大家有什么疑问也可以留言，大家一起探讨一下GIS数据的酷炫展示方式。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;以前总是看到别人开发的GIS软件上有很多酷炫的效果，虽然没有什么实际上的功能，但是看起来真的是很酷炫了，有时候自己就想怎么才能做到这么酷炫的效果呢，直到我遇到Echart这个图标工具，通过这个图标工具就可以做到很酷炫的动态图效
+      
+    
+    </summary>
+    
+      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+      <category term="ArcGIS开发" scheme="http://www.wuweiblog.com/tags/ArcGIS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>激光点云数据三视图生成</title>
+    <link href="http://www.wuweiblog.com/2019/07/02/%E6%BF%80%E5%85%89%E7%82%B9%E4%BA%91%E6%95%B0%E6%8D%AE%E4%B8%89%E8%A7%86%E5%9B%BE%E7%94%9F%E6%88%90/"/>
+    <id>http://www.wuweiblog.com/2019/07/02/激光点云数据三视图生成/</id>
+    <published>2019-07-02T09:17:55.000Z</published>
+    <updated>2019-07-02T09:17:55.422Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
   
   <entry>
     <title>视差理解</title>
@@ -444,56 +483,6 @@
     
     
       <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>一座孤岛</title>
-    <link href="http://www.wuweiblog.com/2018/08/30/%E4%B8%80%E5%BA%A7%E5%AD%A4%E5%B2%9B/"/>
-    <id>http://www.wuweiblog.com/2018/08/30/一座孤岛/</id>
-    <published>2018-08-30T14:39:50.000Z</published>
-    <updated>2018-08-30T15:29:18.590Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;第一次看这部电影应该是本科的时候，晚上本来在研究RNN，突然有点烦，又把这部剧情舒缓的动画翻出来看看。动画讲述一位澳大利亚女孩儿与一位纽约具有自闭症的中年通过书信往来结下深厚友谊的故事，小女孩儿Mary生活的家庭并不幸福，生活中缺少父亲的陪伴和母亲的关爱，另外由于既不聪明也不可爱，所以从小就没有什么朋友。一次偶然的机会，女孩儿突发奇想，想要给一位笔友写信，于是这封信漂洋过海来到纽约，让Max看到了这封信，由此揭开了他们长达二十年的友情。<br>&nbsp;&nbsp;&nbsp;&nbsp;这是一部黏土动画，没有什么激烈的剧情冲突，只是简单的通过一封封的书信介绍各自的生活以及对生活的看法。通过一封封的书信，我们看到了两个孤独的身影，跨过万水千山，相互鼓励相互安慰。我看到有人说是爱情，实际上却不是这么认为，爱情的力量可以跨越万水千山，也可以相互鼓励和安慰，但是爱情更多的陪伴，是双目对视时眼中溢出的爱意，是房间里留下的某个人的身影，是一日不见如隔三秋的思念。而友情却不是这样，与爱相似，但是与爱无关，可以陪伴，也可以潇洒离开。在这里我不想谈关于友情还是爱情，当我重新看完这一部影片后涌现最深刻的感受是孤独。<br>&nbsp;&nbsp;&nbsp;&nbsp;我们生而孤独，如同身处一座孤岛，这便是我们一生的牢笼，不管是身体上还是心理上，爱情是找到一个愿意踏上你的岛来陪你孤独的人，而友情是在另一座岛上理解你孤独的人。实际上这两种感情中的任何一种都是可遇而不可求的，所以我们不断的遇见，然后不断的忘记，最后发现原来还是只有自己。有时候我回家，坐在书房看着我的琴发呆，或者是关上了所有的灯，坐在客厅沙发上发呆。有时候我会想，如果我这一生就这么过去了，一个人默默的在这黑暗中死去，那该是一件多么悲伤的故事。前一些日子看到日本的一个无缘死亡，会感觉到有一些恐慌；一个人没有伴侣，失去所有亲人与朋友之后独自在自己的住所迎接死亡的到来，这该有多么可怕。实际上我们又注定要迎接死亡的到来，前几天的时候以为舅奶奶去世了，我是才知道消息。在我的印象中她的身体一直都很好的，直到我舅姥爷去世，她的身体便是一日不如一日了。也许是思念，也许是孤独，总之是一日不如一日。所以我会想，如果远在天边有一个人，他能够明白我的孤独，能够分担我的忧伤，分享我的快乐，这是一件多么美好的事情。实际上社交网络与通讯工具的发展让我们距离更近了，却更加疏离了。我想你，所以我给你电话，然后我还是想你，我又给你电话，然后你觉得我很烦，我也觉得自己很烦，所以我便不想你了,失去距离让我们的沟通更加高效，但是我们的思念变得廉价，我们的理解我们的同理心变得一文不值，所以我们变得更加孤独了，我们只想找到一个温暖的怀抱来填满我们空空荡荡的房间，而不是一个美好的灵魂来填满我们空空荡荡的心。<br>&nbsp;&nbsp;&nbsp;&nbsp;电影看完了，实际上还是很羡慕剧中Mary和Max，虽然面对生活的泥潭，但是如果我知道远在天边如果有一个人能够理解我，也在盼着我的消息，想想也应该是让生活无论如何都要继续下去的动力吧。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;第一次看这部电影应该是本科的时候，晚上本来在研究RNN，突然有点烦，又把这部剧情舒缓的动画翻出来看看。动画讲述一位澳大利亚女孩儿与一位纽约具有自闭症的中年通过书信往来结下深厚友谊的故事，小女孩儿Mary生活的家庭并不幸福，生活
-      
-    
-    </summary>
-    
-      <category term="影评" scheme="http://www.wuweiblog.com/categories/%E5%BD%B1%E8%AF%84/"/>
-    
-    
-      <category term="Mary and Max，影评" scheme="http://www.wuweiblog.com/tags/Mary-and-Max%EF%BC%8C%E5%BD%B1%E8%AF%84/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>不读书(六)</title>
-    <link href="http://www.wuweiblog.com/2018/08/29/%E4%B8%8D%E8%AF%BB%E4%B9%A6(%E5%85%AD)/"/>
-    <id>http://www.wuweiblog.com/2018/08/29/不读书(六)/</id>
-    <published>2018-08-29T00:09:29.000Z</published>
-    <updated>2018-08-29T08:36:12.035Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;要是在四五年前看这本书，我可能不会喜欢，现在看起来却是看得我直冒冷汗。其实我不太喜欢潜规则这个词，这个词显得太不正义，总有一种鬼鬼祟祟的感觉，但是不得不承认，这个词的创立简直是对几千年来社会处事准则最准确的归纳和概括。为什么叫潜规则，因为这样的规则是不能放在台面上说的，为什么不能放在台面上说，因为其中涉及了太多人性中不是那么光明伟岸的一面，所以我们本能的对其缄口不言，但是行事中却默许其存在。<br>&nbsp;&nbsp;&nbsp;&nbsp;晶姐推荐的这本书在上周终于看完了，看前半部分的时候会震撼很多，后半部分反而习以为常了，本书全面的介绍了潜规则在中国这个集权社会中的体现，分析了潜规则形成的原因并解释了这么多年来一直存在的理由。整本书以古代官场为背景，分析了古代官场中一系列的潜规则现象。实际上几千年来，我国作为一个中央集权制的国家，国家掌握着最大的资源和话语权，而作为国家代表的官员则是国家资源分配权力的实际掌控者。实际上整个社会阶层呈现一个金字塔状，最底层是数量最多的百姓，然后依次向上是逐级官僚，实际上整个官僚体系都是建立在对农名阶级的剥削基础上。但是为了避免过度剥削而引起整个体系的崩塌，于是乎建立了一整套例如仁义道德，忠君爱民，清正廉明等等不过是一套看似华丽的外衣罢了，说到底不过是赤裸裸的利益勾结和利益计算而已。<br>以下是摘抄了书中的几个观点进行分析：</p><blockquote><p>1.一个变质的政府，一个剥削性越来越强、服务性越来越弱的政府，自然也需要变质的官员，需要他们泯灭良心，心狠手辣，否则就要请你走人。这这种背景下，清官和恶棍的混合比率（即清官少，恶棍多）并不是偶然的巧合，而是定向选择的结果。恶政好比是一面筛子，淘汰清官，选择恶棍。<br>2.这就是说，在进行官场谋划，努力摆平各种利害关系的时候，无需考虑老百姓的压力，他们根本就不能构成一个压力集团，甚至连一个舆论集团也不是，不过是一盘散沙。<br>3.第一次接受了圣贤的教育，第二次则是接受胥吏衙役和人间大学的教育。第一次教育教了官员们满口仁义道德，第二次教育教了他们一肚子男盗女娼。<br>4.大家都懂得爱护羊群的重要意义。奈何抵抗不住眼前绵羊的诱惑，也抵抗不住生育狼崽子的诱惑。这也是有道理的：我不吃，别的狼照样吃；我不生，别的狼照样生。个体狼的利益与狼群的集体利益未必一致。如果我的节制不能导致别人的节制，我的自我约束对羊群来说就没有任何意义，徒然减少自己的份额而已。在老狼忍不住饕餮的时候，我可以听到一声叹息：它们要是变成刺猬，俺们不就变成清官了么？<br>5.真实的常规是：对局者双赢，老百姓买单。<br>6.老百姓是个冤大头(大头就是钱的意思。冤大头本意是花了冤枉的钱，引申为上当、不合算等. )。人家骂了他，打了他，吸了他的血，他连找人家的家长哭诉告状都找不起。唯一合算的选择，只剩下一个忍气吞声，继续让人家吸血。</p></blockquote><p>&nbsp;&nbsp;&nbsp;&nbsp;我们选取其中的部分进行详细分析，首先第一个条，劣币驱逐良币理论，官场中正直清廉的官员往往只占极小部分，而且往往郁郁不得志。为什么会出现这样的状况，实际上分析一下做正直官员与做一个非正直官员所承担的风险和收益就可以看出来，做一个正直官员往往面临着得罪同事，得罪上司等一系列风险，维护百姓的利益实际上可能还得不到好评，而一个非正直的官员既能够得到上司的好评又能够得到同事的好评，甚至能够赚得不菲的身价，而他所冒的风险仅仅是收到一些背地里的差评，而这些差评似乎对其官场生涯无关紧要，在风险和收益严重不成比例的情况下，出现劣官驱逐良官的现象也是必然的。另外第五条，对局者双赢，老百姓买单，这个看似不好理解，实际上很好理解，所谓清官与贪官的对局，从官吏组成结构来看只是一个上层制度的调整而已，是一个长期的剥削和短期过度剥削的理念对局，而下层的百姓永远免不了被剥削，因此从官吏阶层来看，对局者是处于双赢的局面的，而百姓总是付出代价的阶级。<br>&nbsp;&nbsp;&nbsp;&nbsp;以上截取了书中的部分观点，实际上我们更关心的是如何解决这个问题，从书中似乎看不到解决问题的具体方略，不过有一点是很明确的，那就是阶层的对立。实际上政府由于其具有较大的话语权，因此虽然说冠冕堂皇的将自己定义为服务者也不能免除其处于管理者的姿态。因此要解决以上问题，首要就是解决管理与服务的定位问题。而这个问题的关键在于执法权的归属问题，实际上所谓的内部监督说到底，立法执法都是统一个阶级，那就难以避免会出现潜规则的现象，因此需要权力的制衡，三权分立能够很好的实现权力的制衡，但是如果处于同一阶级，这样的制衡便失去了意义，重点在于对立的阶层需要掌握制衡的权力。以上是我的一点点看法，个人的意见，不对此负责。</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;要是在四五年前看这本书，我可能不会喜欢，现在看起来却是看得我直冒冷汗。其实我不太喜欢潜规则这个词，这个词显得太不正义，总有一种鬼鬼祟祟的感觉，但是不得不承认，这个词的创立简直是对几千年来社会处事准则最准确的归纳和概括。为什么叫
-      
-    
-    </summary>
-    
-      <category term="书评" scheme="http://www.wuweiblog.com/categories/%E4%B9%A6%E8%AF%84/"/>
-    
-    
-      <category term="潜规则,书评" scheme="http://www.wuweiblog.com/tags/%E6%BD%9C%E8%A7%84%E5%88%99-%E4%B9%A6%E8%AF%84/"/>
     
   </entry>
   
