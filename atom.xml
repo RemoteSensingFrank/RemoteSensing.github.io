@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.wuweiblog.com/"/>
-  <updated>2019-08-20T01:12:41.045Z</updated>
+  <updated>2019-08-22T10:32:29.702Z</updated>
   <id>http://www.wuweiblog.com/</id>
   
   <author>
@@ -15,6 +15,56 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Kafka原理与应用</title>
+    <link href="http://www.wuweiblog.com/2019/10/29/kafka%E5%8E%9F%E7%90%86%E4%B8%8E%E5%BA%94%E7%94%A8/"/>
+    <id>http://www.wuweiblog.com/2019/10/29/kafka原理与应用/</id>
+    <published>2019-10-29T08:34:08.000Z</published>
+    <updated>2019-08-22T10:32:29.702Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;Kafka是最初由Linkedin公司开发，是一个分布式、支持分区的（partition）、多副本的（replica），基于zookeeper协调的分布式消息系统，它的最大的特性就是可以实时的处理大量数据以满足各种需求场景：比如基于hadoop的批处理系统、低延迟的实时系统、storm/Spark流式处理引擎，web/nginx日志、访问日志，消息服务等等，用scala语言编写，Linkedin于2010年贡献给了Apache基金会并成为顶级开源项目。提高Kafka我们首先从消息队列入手，然后再看看Kafka的架构设计存在的特点以及其应用。</p><h2 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;什么是消息队列，简单的来说消息队列（Message Queue）是一种进程间通信或同一进程的不同线程间的通信方式。消息队列可以理解为前后端的一个中间件，对于一般应用来说，由前端直接访问后端或者后端向前端推送消息，这样的模式存在着几个问题：1.前后端应用耦合性的问题；2.程序异步执行问题；3.流量控制问题；而消息队列的出现就是针对以上几个问题的一个解决方案。<br>&nbsp;&nbsp;&nbsp;&nbsp;以一个简单的例子来说明消息队列的应用场景，比如秒杀系统，在短时间内会存在大量的用户请求，这些请求如果全部都由后台来进行处理，则会导致后台压力大大提高，甚至会出现无法响应的问题，而前端用户需要等待的时间也大大延长，为了能够处理以上问题，我们通过一个消息队列快速存储所有用户消息，由于队列是一个先进先出的存储模式，因此通过消息队列的形式保证用户请求都能够请求到，然后后台逐步进行响应，从前端用户来说降低了请求无法响应的概率，同时后台也能够大大减轻服务压力。但是这样做也会出现一个问题，就是我们将用户请求发给消息队列后，用户接收到处理完成信息，但是这并不代表消息已经被处理了，因此需要重新在后台处理完消息队列后的消息后再提供反馈确认消息处理完成，当然采用消息队列虽然能够解决一些问题，但是滥用消息队列也会造成一些问题，主要包括：</p><ul><li><strong><em>系统可用性降低：</em></strong> 系统可用性在某种程度上降低，为什么这样说呢？在加入MQ之前，你不用考虑消息丢失或者说MQ挂掉等等的情况，但是，引入MQ之后你就需要去考虑了！</li><li><strong><em>系统复杂性提高：</em></strong> 加入MQ之后，你需要保证消息没有被重复消费、处理消息丢失的情况、保证消息传递的顺序性等等问题！</li><li><strong><em>一致性问题：</em></strong> 我上面讲了消息队列可以实现异步，消息队列带来的异步确实可以提高系统响应速度。但是，万一消息的真正消费者并没有正确消费消息怎么办？这样就会导致数据不一致的情况了!</li></ul><p>提出以上问题只是为了说明消息队列能够对系统负载有极大的提高，但是我们也不能忽略其带来的副作用，什么时候使用消息队列，以及如何使用需要我们仔细思考。</p><h2 id="Kafka原理说明"><a href="#Kafka原理说明" class="headerlink" title="Kafka原理说明"></a>Kafka原理说明</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;其实kafka也就是是一种消息队列，只是其在简单的消息队列的基础上进行了更加完整的架构，我们下面仔细说明一下kafka的架构信息。<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/kafka%E6%9E%B6%E6%9E%84%E5%9B%BE.png" alt="kafka架构"><br>&nbsp;&nbsp;&nbsp;&nbsp;从上面的架构图中可以看到，kafka的几个特点以及几个名词，主要包括：</p><ul><li>生产者（Producer）:消息和数据生产者</li><li>代理（Broker）:缓存代理，Kafka的核心功能</li><li>消费者（Consumer）:消息和数据消费者</li></ul><p>实际上kafka的过程就是从生产者生产了数据放在Broker中，Broker承担一个中间缓存和分发的作用，负责分发注册到系统中的Consumer，实际上Consumer通过主动取数据的方式能够取到kafka中的消息，这一个整体的流程就是kafka作为一个消息队列的整个过程。在这里Broker可以看做一个服务器集群，他们通过zookeeper进行负载均衡。此外还有一些术语，包括topic，partition，以及message，kafka将消息组合为一个或多个topic进行存储，实际上topic就是某一类消息的汇总，我们可以将其理解为一个文件名，或者是一个文件描述，在topic之下有partition，partition为消息存储的实际结构，一个topic的消息可以保存到多个partition中供消费者读取，每个消息都被标识了一个递增序列号代表其进来的先后顺序，并按顺序存储在partition中。这个标识在kafka中称为id，实际上消费者能够通过id以及其偏移量进行随机的读取消息，实现了消息的灵活读取。<br>&nbsp;&nbsp;&nbsp;&nbsp;作为一个消息队列，kafka提供了消息持久化的功能，即消息能够保存到文件中进行持久化，同时kafka也支持备份机制，对于kafka来说，所有Node都提供一份完整备份，也就是说当有N个副本时，N个副本都在ISR中，N-1个副本都出现异常时，系统依然能提供服务。具体的kafka的消息持久化和备份机制可以参看<a href="https://kafka.apache.org/" target="_blank" rel="noopener">kafka官网介绍</a>。  </p><h2 id="Kafka应用实践"><a href="#Kafka应用实践" class="headerlink" title="Kafka应用实践"></a>Kafka应用实践</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;kafka做为一个消息队列，其设计是十分精巧的，但是他的使用和部署方法却是十分方便，在windows下也能够方便的进行部署和使用，正常情况下按照<a href="https://blog.csdn.net/woshixiazaizhe/article/details/80610432" target="_blank" rel="noopener">参考资料</a>都能够部署成功，但是有几个问题是需要确认的，第一个问题在于kafka的版本，在我尝试过程中3.5以上的版本在部署的过程中可能出现问题，因此建议采用3.4.X的版本部署。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;Kafka是最初由Linkedin公司开发，是一个分布式、支持分区的（partition）、多副本的（replica），基于zookeeper协调的分布式消息系统，它的最大的特性就是可以实时的处理大量数据以满足各种需求场景：比
+      
+    
+    </summary>
+    
+      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+      <category term="系统架构 学习" scheme="http://www.wuweiblog.com/tags/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84-%E5%AD%A6%E4%B9%A0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>矢量切片理论与实践</title>
+    <link href="http://www.wuweiblog.com/2019/10/28/%E7%9F%A2%E9%87%8F%E5%88%87%E7%89%87%E7%90%86%E8%AE%BA%E4%B8%8E%E5%AE%9E%E8%B7%B5/"/>
+    <id>http://www.wuweiblog.com/2019/10/28/矢量切片理论与实践/</id>
+    <published>2019-10-28T02:39:09.000Z</published>
+    <updated>2019-08-20T06:40:00.560Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;矢量数据则是试图利用点、线、面等几何要素来表现这个世界，其数据结构紧凑精准，数据图形质量好，有利于地理信息检索与网络传输等。其中矢量数据的最小单元是以点的形式存在，点构成线，线组成面，面构造出体。随着WebGIS的发展，对于数据展示与数据传输的要求也在不断提高，对于栅格数据来说，通过切片的方式进行动态渲染能够实现根据数据展示范围与层级的实时渲染，大大提高了数据加载效率，而对于矢量数据来说，如果矢量数据量比较大，则前端渲染则效率会出现明显下降，因此为了提高矢量数据渲染和展示能力，同时充分利用矢量数据无极缩放的能力，矢量切片的技术应运而生。</p><h2 id="矢量切片的理论基础"><a href="#矢量切片的理论基础" class="headerlink" title="矢量切片的理论基础"></a>矢量切片的理论基础</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;对于栅格数据的切片我们很好理解，通过影像采样的方式得到不同层级的影像，通过地理坐标到像素行列号的方法映射出地理坐标，相比于栅格数据切片方法，矢量数据虽然在原理上存在一定的相似性，但是由于矢量数据的特殊性，矢量切片与栅格数据切片还是存在一定的差异。<br>&nbsp;&nbsp;&nbsp;&nbsp;目前矢量切片主要有以下三种格式：GeoJSON，TopoJSON和MapbBox Vector Tile(MVT)，其中使用的比较广泛的为MVT格式，在栅格切片中每一个栅格为一张影像，影像样式无法进行修改与处理，而矢量切片，实际上是根据切片范围对矢量数据的描述进行切片，针对不同的范围加载不同的切片描述，而前端根据切片描述绘制出对应的矢量数据。实际上我个人理解为：类似影像数据，我们将矢量数据按照一定的切片规则分为不同的块，每个块能够对应一个地理范围，我们将这个地理范围内的数据以某一种绘制方式进行编码得到一个类似于影像的编码文件，前端根据展示的范围显示对应的编码块，并根据编码块进行渲染展示。</p><h2 id="矢量瓦片数据格式标准"><a href="#矢量瓦片数据格式标准" class="headerlink" title="矢量瓦片数据格式标准"></a>矢量瓦片数据格式标准</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://github.com/jingsam/vector-tile-spec/blob/master/2.1/README_zh.md" target="_blank" rel="noopener">MapbBox Vector Tile(MVT)格式标准参考</a>，实际上不同格式编码有着严格的标准，对于MVT格式来说，其标准是开源的切片标准，具体的标准格式可以参考标准文档，在这里我只对瓦片绘制的方式进行简要说明，矢量瓦片中的几何数据被定义为按照屏幕坐标绘制的形式，其中几何图形被简单的编码为指令和参数的形式（这里有点类似SVG文件但是又不太一样），具体的指令包括MoveTo，LineTo以及ClosePath，每一个指令被映射为一个编码，这样将数和ID映射到一个INT类型的数据中，其中最后3bit标识指令，前29bit标识指令执行次数，参数的编码和解码方式为：<br>$$<br>ParameterInteger = (value &lt;&lt; 1) ^ (value &gt;&gt; 31)\ value = ((ParameterInteger &gt;&gt; 1) ^ (-(ParameterInteger \&amp; 1)))<br>$$<br>得到编码和解码方式之后就可以通过一个数组来表示一个几何对象，对于不同的对象需要的操作是不同的，另外需要注意的是数据的编码是采用相对坐标的形式，每一个要素的后面数据点的坐标都是相对于前一个点来计算的，第一个点的坐标是相对于（0，0）点来计算的。<br>&nbsp;&nbsp;&nbsp;&nbsp;要素属性被编码为tag字段中的一对对整数。在每对tag中，第一个整数表示key在其所属的layer的keys列表的中索引号（以0开始）。第二个整数表示value在其所属的layer的values列表的中索引号（以0开始）。一个要素的所有key索引必须唯一，以保证要素中没有重复的属性项。每个要素的tag字段必须为偶数。要素中的tag字段包含的key索引号或value索引号必须不能大于或等于相应图层中keys或values列表中的元素数目。</p><h2 id="矢量切片生成方式"><a href="#矢量切片生成方式" class="headerlink" title="矢量切片生成方式"></a>矢量切片生成方式</h2><p>&nbsp;&nbsp;&nbsp;&nbsp;矢量切片有很多生成方式，在这里我只介绍通过ArcGIS进行矢量切片数据的方式，ArcGIS在10.4以后就支持发布和切矢量切片了，其具体步骤为：<br>在ArcGIS Pro中构建矢量切片：  </p><ul><li>开启 ArcGIS Pro 并打开包含要发布的地图的工程。</li><li>请确保您的门户连接处于活动状态，且您已使用具有创建内容和发布托管切片图层权限的帐户登录到您的组织。</li><li>要发布切片图层，请执行以下操作之一：在内容窗格中选择这些图层。右键单击选择集，然后单击共享为 Web 图层。要在地图中发布所有图层，请在共享选项卡的共享为组中单击 Web 图层，然后单击发布 Web 图层。</li><li>输入切片图层的名称。图层默认保存到我的内容中。您可以通过输入子文件夹名称或浏览已有的文件夹将图层保存到我的内容的子文件夹中。</li><li>选择复制所有数据。</li><li>在图层类型中选择切片。这样会自动取消选中其他图层类型选项，因为复制数据时仅可选中一个选项。</li><li>提供切片图层的摘要和标签。</li><li>请指定应该访问托管切片图层的用户。发布的所有图层都会自动共享到您的组织内的个人工作空间中（我的内容），并选择共享的用户。</li><li>单击配置，然后单击配置 Web 图层属性按钮以指定缓存设置。</li><li>选择切片方案。</li><li>调整并拖拽细节层次条块来为您的切片图层指示最小和最大比例。在您更改最小和最大比例时，生成缓存的估计大小会发生改变。</li><li>选择构建切片缓存的时间和位置。</li><li>要允许用户下载地图切片以供离线使用，请选中允许客户端导出缓存切片。</li><li>如果选中了允许客户端导出缓存切片，请使用导出限制为字段指定客户端一次可离线使用的最大切片数量。</li><li>请单击内容选项卡来确认切片图层将会包含您所需的数据图层。</li><li>请单击分析来检查错误或故障。</li><li>解决错误和某些警告后，单击发布 。</li></ul><p>除了通过ArcGIS Pro构建和发布矢量切片外还可以通过ArcGIS Server通过要素服务发布和构建矢量切片，具体的方法参考<a href="https://enterprise.arcgis.com/zh-cn/portal/latest/use/publish-tiles.htm#ESRI_SECTION1_D7F82432E5DD479DA47B4C9DD657610E" target="_blank" rel="noopener">ArcGIS 官方文档</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;矢量数据则是试图利用点、线、面等几何要素来表现这个世界，其数据结构紧凑精准，数据图形质量好，有利于地理信息检索与网络传输等。其中矢量数据的最小单元是以点的形式存在，点构成线，线组成面，面构造出体。随着WebGIS的发展，对于数
+      
+    
+    </summary>
+    
+      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+      <category term="ArcGIS开发" scheme="http://www.wuweiblog.com/tags/ArcGIS%E5%BC%80%E5%8F%91/"/>
+    
+  </entry>
   
   <entry>
     <title>得到什么，放弃什么</title>
@@ -433,56 +483,6 @@
     
     
       <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>我曾经历过沧海桑田</title>
-    <link href="http://www.wuweiblog.com/2018/11/26/%E6%88%91%E6%9B%BE%E7%BB%8F%E5%8E%86%E8%BF%87%E6%B2%A7%E6%B5%B7%E6%A1%91%E7%94%B0/"/>
-    <id>http://www.wuweiblog.com/2018/11/26/我曾经历过沧海桑田/</id>
-    <published>2018-11-26T15:21:12.000Z</published>
-    <updated>2018-12-08T10:26:08.745Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;有些时候心里有很多 想法但是没有来得及记录下来，等到正襟危坐打开电脑想要记录一下的时候已经有些来不及 了，肥宅最近就深有体会。可能是老猪在他这里呆久了，他也染上了老猪的好吃懒做的毛病，曾经肥宅也是一个比较自律的人，具体的自律体现在吃顿饭从来不超过二十，每天晚上一定要上床睡觉，每天至少能留出一点时间来想姑娘。和老猪呆在一起时间长了之后肥宅发现自己腰不酸了，床不睡了并且连姑娘都不再想了，对此肥宅表示很难过，连姑娘都不想的生活不是他想要的生活，所以他决定找老猪谈谈，当然这么正式的会谈仪式感还是很重要的，所以肥宅特意买了几只猪蹄还有两斤猪头肉和几瓶啤酒，这天老猪看到桌上丰盛的小吃吓得瑟瑟发抖，这是肥宅叫过老猪说：“老猪有没有时间，我有点事想跟你谈谈。”老猪本能的想要拒绝，但是看到肥宅坚定的眼神以及桌上看起来很好吃的猪头肉，情不自禁的点点头，就这样肥宅和猪开启了他们跨越人生与梦想的长谈。<br>&nbsp;&nbsp;&nbsp;&nbsp;肥宅跟猪说：“老猪，最近受你的影响，我发现自己的生活习惯很不好了呀，床也不睡了，姑娘也不想了，你是不是要背这个锅呀！”当然实际上肥宅知道这不是猪的锅，只是他自己似乎已经缺少了些什么东西，但是他是不会承认的。如果不是对于自己不在乎的东西有谁能轻易承认自己的匮乏与无能呢，他想，所以他要给自己找个理由来证明这个不是他自己的原因，此时猪就是最好的背锅侠了。听到这话猪很惊讶：“小老弟呀！你这个锅甩很好呀，每天下班回来躺在沙发刷手机刷到睡着的锅我老猪可不背，至于不去想姑娘的事情，怪我咯？不过说句心里话就你这样，别说姑娘了，母猪可能都看不上你，每天邋里邋遢，目光呆滞毫无亮点，不想姑娘是对的，就算想了估计也是白想。你能不能像我老猪一样每天弄的人模猪样的，出门不知道多少母猪对我抛媚眼，你看看我肥硕腱子肉，你知道我在圈内猪称行走的荷尔蒙，所以说小老弟呀搞清楚重点很重要呀。”肥宅听了老猪的话只能苦笑，行走的荷尔蒙什么的他不知道是不是真的，但是桌上的猪头肉很好吃是真真实实的。看到肥宅吃猪头肉吃的这么开心老猪不禁感到菊花一紧，然后又觉得好像不太对为啥吃猪头肉自己会要菊花一紧，不过这些都不是重点。肥宅听了老猪的话已经陷入了沉思。其实肥宅骨子里是一个自私的人，他所有的努力所有的坚持并不是为了取悦别人，仅仅是为了让自己得到提升，所以很多时候他并不太在乎别人的看法和意见，当然也不存在想要获得别人的关注和吸引其他人的目的，这其实谈不上是一件好事，当然也谈不上是一件坏事，不过可能肥宅的心智不够坚定，所以偶尔会感觉到孤独，偶尔会觉得迷茫。这时他想起了一句话’”他没有选择，他所走的是一条荆棘丛生的道路，他所走的每一步都无比艰难，但是这是一条最坚定和踏实的道路。”也许肥宅现在正在走一条这样的道路吧。想通了这个问题他也不再去纠结关于母猪和姑娘的问题了，但是他对老猪的人生一直很好奇，究竟是一个什么样的环境才能养出一只这样特立独行的猪呢？所以他问猪说：“老猪，说说你自己呗，在来我这里之前你过的是怎么样！”说罢连猪头肉也不吃了，认真的看着猪，听到这话猪觉得自己装逼的机会又来了，正准备高谈阔论一番，这时肥宅幽幽说到：“你这次要是再敢胡扯我就把你送去屠宰场阉掉，所以你说话最好走心。”听到这番话猪吓得差点小便失禁，看来装逼不成了，然后猪就陷入了沉思。猪曾经呆过很多地方，遇到过很多人，有温润如君子的普通人，有狡猾奸诈的普通人，有不善言辞的普通人，有口若悬河的普通人，有美貌光彩照人的普通人，也有长相平平的普通人。这又是一个很长的故事了…</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;有些时候心里有很多 想法但是没有来得及记录下来，等到正襟危坐打开电脑想要记录一下的时候已经有些来不及 了，肥宅最近就深有体会。可能是老猪在他这里呆久了，他也染上了老猪的好吃懒做的毛病，曾经肥宅也是一个比较自律的人，具体的自律体
-      
-    
-    </summary>
-    
-      <category term="随感" scheme="http://www.wuweiblog.com/categories/%E9%9A%8F%E6%84%9F/"/>
-    
-    
-      <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>kd树的构建</title>
-    <link href="http://www.wuweiblog.com/2018/11/11/kd%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA/"/>
-    <id>http://www.wuweiblog.com/2018/11/11/kd树的构建/</id>
-    <published>2018-11-11T14:04:33.000Z</published>
-    <updated>2018-11-11T15:27:17.977Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;在这个普天同庆的光棍节的大日子默默的睡了个天昏地暗，然后爬起来写了个专利。实际上写专利的时候又突然搞懂了KD树的构建算法，果然工作使我快乐，以前的时候一直在用KD树，不过都是用的开源的库，所谓的混合索引方式也只是在开源库的基础上进行代码的改造，对于原理的理解还是不够深入，今天在写专利的时候重新梳理了一次觉得终于弄得有点明白了。<br>&nbsp;&nbsp;&nbsp;&nbsp;下面上一张图来说明一下这个过程：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E4%BA%8C%E7%BB%B4%E7%A9%BA%E9%97%B4KD%E6%A0%91.jpg">  </p><p>&nbsp;&nbsp;&nbsp;&nbsp;上图是二维空间KD树的划分过程，首先确定划分是从哪一个维度进行，是从x维还是从y维，一般确定维度的过程是计算数据集在各个维度的方差或标准差，从方差或标准差大的维度开始计算进行划分。确定维度后按照该维度进行排序取中位数将点集划分为两个部分，如线1所示，进行第一次划分之后对左右两个点集进行第二次划分如线2所示，然后依次进行划分直到所有点都只属于某一个划分。上图是对于二维点的一个划分，实际上对于高维的点也差不多，由于高维画起来比较麻烦就懒得画了。在解决划分和构造的问题的基础上我们就需要问，如果构造好了一棵树，怎么进行最近邻查询，这个就是我们下面需要讨论的问题。<br>&nbsp;&nbsp;&nbsp;&nbsp;我们用一幅图来展示整个搜索过程：</p><p><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E4%BA%8C%E7%BB%B4%E7%A9%BA%E9%97%B4KD%E6%A0%91%E6%90%9C%E7%B4%A2.jpg"><br>以上就是我们的最近邻的搜索过程,红色的五角星为目标点，首先计算目标点到根节点的距离，构成一个超球，判断各个区域是否与超球有相交，通过判断可知P8与P11所在空间与超球没有交集因此忽略这两个部分，然后计算与P3和P9的距离，与根节点的距离比较，如果小于根节点的距离则缩小这个超球，为点到P3的距离，据此可以忽略整个P6右侧所有节点，以及P4节点所在空间；然后遍历剩下的节点，找到最近的节点P1。<br>参考资料：<br><a href="https://leileiluoluo.com/posts/kdtree-algorithm-and-implementation.html" target="_blank" rel="noopener">https://leileiluoluo.com/posts/kdtree-algorithm-and-implementation.html</a><br><a href="https://www.cnblogs.com/earendil/p/8135074.html" target="_blank" rel="noopener">https://www.cnblogs.com/earendil/p/8135074.html</a></p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;在这个普天同庆的光棍节的大日子默默的睡了个天昏地暗，然后爬起来写了个专利。实际上写专利的时候又突然搞懂了KD树的构建算法，果然工作使我快乐，以前的时候一直在用KD树，不过都是用的开源的库，所谓的混合索引方式也只是在开源库的基础
-      
-    
-    </summary>
-    
-      <category term="算法" scheme="http://www.wuweiblog.com/categories/%E7%AE%97%E6%B3%95/"/>
-    
-    
-      <category term="算法" scheme="http://www.wuweiblog.com/tags/%E7%AE%97%E6%B3%95/"/>
     
   </entry>
   
