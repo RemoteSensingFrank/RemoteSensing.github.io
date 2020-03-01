@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://www.wuweiblog.com/"/>
-  <updated>2020-02-18T08:34:36.271Z</updated>
+  <updated>2020-03-01T08:09:09.985Z</updated>
   <id>http://www.wuweiblog.com/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>tensorflow-第二十九弹</title>
+    <link href="http://www.wuweiblog.com/2020/02/28/tensorflow-%E4%BA%8C%E5%8D%81%E4%B9%9D%E5%BC%B9/"/>
+    <id>http://www.wuweiblog.com/2020/02/28/tensorflow-二十九弹/</id>
+    <published>2020-02-28T06:14:07.000Z</published>
+    <updated>2020-03-01T08:09:09.985Z</updated>
+    
+    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;很久没有更新这个系列了，不知不觉tensorflow也更新到了2.x版，新版得tenforflow相比于1.x的版本，有着更快的训练速度，同时内部集成了keras使得网络的构建和训练变成了一件及其简单的事情，因此在构建网络上并没有什么可以细说的，剩下的工作我们会把代码的编写放在后一步，着重的说明各种网络的构建模式以及机器学习中的一些细节问题，以及导致这些问题的原因，由此更深入的了解如何通过机器学习对网络进行调优。<br>&nbsp;&nbsp;&nbsp;&nbsp;我打算花一下午的时间总结一下主要包括几个部分的问题：</p><ul><li>第一个就是激活函数的问题：激活函数的类型，为什么需要激活函数，以及如何判断激活函数的好坏；</li><li>第二个是keras的问题，这个工具以前没有用过，所以打算用一下，顺便介绍一下其特点；</li><li>第三个是关于GAN的问题，在GAN中有一个重要的问题是生成器与识别器如何联合调优的问题，这个需要仔细分析；</li></ul><p>&nbsp;&nbsp;&nbsp;&nbsp;首先我们来谈一下什么是激活函数：<a href="https://baike.baidu.com/item/%E6%BF%80%E6%B4%BB%E5%87%BD%E6%95%B0/2520792?fr=aladdin" target="_blank" rel="noopener">在神经元中，输入的 inputs 通过加权，求和后，还被作用了一个函数，这个函数就是激活函数。引入激活函数是为了增加神经网络模型的非线性。没有激活函数的每层都相当于矩阵相乘。就算你叠加了若干层之后，无非还是个矩阵相乘罢了。</a>以上这句话引用自百度百科，实际上意思就是说对于神经网络来说，一个神经元的输入实际上就是前面一层神经元值得线性组合，如果不做任何处理，则神经网络就是多个线性函数组合，也就是说就算添加了隐藏层，最后得输出也只是最原始得输入得线性组合（证明），因此中间的隐藏层存在的意义就很有有限，而引入激活函数后，通过激活函数做一个非线性映射，使得神经网络能够对任何函数进行逼近。在了解激活函数后我们需要进一步的了解梯度消失问题：<img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C%E6%A2%AF%E5%BA%A6%E6%B6%88%E5%A4%B1.png" alt="梯度比较1"><br>上图中的黄色矩形柱的高度代表了梯度的变化的大小，从中我们可以看到layer2中的梯度变化明显大于layer1，下面需要通过数学的方法进行证明:<br>&nbsp;&nbsp;&nbsp;&nbsp;假设$\delta^l_j= \partial C /\partial b^l_j$表示第l层第j个神经元的梯度，假设$\delta^1$为第一层的梯度向量，$\delta^2$为第二层的梯度向量，通过向量长度能够近似的表示某一层的学习速率，则不同层的学习速率曲线如下图：<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E4%B8%8D%E5%90%8C%E5%B1%82%E5%AD%A6%E4%B9%A0%E9%80%9F%E7%8E%87.png" alt="梯度比较2"><br>从上图可以看到，越靠近输出层的隐藏层具有越高的学习速率，这个就是我们所说的梯度消失的问题，神经网络层数越多，梯度下降越明显，神经网络层数过多可能导致开始的神经网络梯度变化很小，收敛困难，同时梯度消失的问题又导致对于激活函数响应的问题，这就是我们提到的<a href="http://neuralnetworksanddeeplearning.com/chap5.html" target="_blank" rel="noopener">梯度消失问题</a>。<br>&nbsp;&nbsp;&nbsp;&nbsp;上面的说明都是从实验证明上体现了梯度消失的问题，下面我们对梯度消失的原因进行详细说明:<br><img src="https://blogimage-1251632003.cos.ap-guangzhou.myqcloud.com/%E6%A2%AF%E5%BA%A6%E6%B6%88%E5%A4%B1%E8%AF%B4%E6%98%8E.png" alt="梯度消失3"><br>上图中我们构造了一个最简单的神经网络，每一层只有一个神经元，一般来说权重$w$都小于1，实际上对于激活函数（假设激活函数为sigmoid函数），则sigmoid函数的梯度最大值为0.25，则$|w_j \sigma’(z_j)| &lt; 1/4$由此可得，梯度存在指树下降趋势，由此导致梯度消失。<br>&nbsp;&nbsp;&nbsp;&nbsp;在了解了梯度消失后我们就可以介绍一下<a href="https://blog.csdn.net/tyhj_sf/article/details/79932893" target="_blank" rel="noopener">各种激活函数了</a>实际上主要介绍三类，分别为sigmoid函数，tanh函数以及ReLU函数。对于不同的激活函数我们主要看几点：</p><ul><li>1.激活函数是否对整个实数空间适用（映射整个实数空间）；</li><li>2.激活函数的导数情况；</li></ul><p>&nbsp;&nbsp;&nbsp;&nbsp;其中第一点是对激活函数的要求，第二点是判断激活函数好坏的特征，这三类激活函数的函数特征在<a href="https://blog.csdn.net/tyhj_sf/article/details/79932893" target="_blank" rel="noopener">网上很多资料</a>上都有,我们就这几种函数来说明他们之间的优劣和各自的特点。首先是sigmoid函数，sigmoid函数在深度学习早期是使用很广泛的函数，在我们刚刚学习深度学习的时候一般是以此函数作为模板的，这个函数满足我们第一点的情况，对于$[-\infty,+\infty]$区间都能够映射到$[-1,1]$之间，且求导简单。但是如我们以上分析的sigmoid函数存在几个问题，第一个：梯度消失的问题，在值极小的情况下sigmoid函数梯度趋近于0，由此导致在多层神经网络中收敛缓慢。特别是在深度神经网络中，梯度消失现象更加明显。第二：sigmoid输出的数学期望不为0，由此导致每一层神经元在传递过程中得到上一层的非0均值的信号叠加的输入。针对第二个问题，有学者引入了tanh函数，tanh函数与sigmoid函数十分相似，只是均值为0。针对第一个问题，有学者引入了ReLU函数，ReLU函数简单，计算极快，但是ReLU的问题在于非0均值以及对于小于0的输入，梯度都为0，神经元不激活。针对ReLU的问题，有很多学者对ReLU函数进行了改进，得到了一系列ReLU函数的变体，在这篇文章中就不进行详细的讨论，在后续文章中会陆续更新关于tensorflow2.0以及一些其他典型网络的相关实现。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;很久没有更新这个系列了，不知不觉tensorflow也更新到了2.x版，新版得tenforflow相比于1.x的版本，有着更快的训练速度，同时内部集成了keras使得网络的构建和训练变成了一件及其简单的事情，因此在构建网络上并
+      
+    
+    </summary>
+    
+      <category term="学习" scheme="http://www.wuweiblog.com/categories/%E5%AD%A6%E4%B9%A0/"/>
+    
+    
+      <category term="tensorflow学习" scheme="http://www.wuweiblog.com/tags/tensorflow%E5%AD%A6%E4%B9%A0/"/>
+    
+  </entry>
   
   <entry>
     <title>活得怎么样</title>
@@ -462,29 +487,6 @@
     
     </summary>
     
-    
-  </entry>
-  
-  <entry>
-    <title>燃烧的巴黎圣母院</title>
-    <link href="http://www.wuweiblog.com/2019/04/16/%E7%87%83%E7%83%A7%E7%9A%84%E5%B7%B4%E9%BB%8E%E5%9C%A3%E6%AF%8D%E9%99%A2/"/>
-    <id>http://www.wuweiblog.com/2019/04/16/燃烧的巴黎圣母院/</id>
-    <published>2019-04-16T13:34:18.000Z</published>
-    <updated>2019-04-16T14:52:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>&nbsp;&nbsp;&nbsp;&nbsp;今天被巴黎圣母院的新闻刷屏了，一座经历了几百年的著名建筑就这样在一场意外中几乎毁于一旦。对于此事我表示十分惋惜。其实巴黎圣母院距离我算是太过遥远，我知道这个建筑完全是通过雨果的著名小说。当然对于它所承载的文化内涵除了惋惜并没有太多其他的情绪，但是对于这件事情让我感触很深。<br>&nbsp;&nbsp;&nbsp;&nbsp;其实主要是对于什么才是永恒的话题的感触，这个问题太大我恐怕说不清楚，不过我可以谈谈我自己关于这个问题的一点点的看法。以前的时候很喜欢一句话“天地不仁以万物为刍狗，圣人不仁以百姓为刍狗”——《道德经》；另外就是子在川上曰的那句“逝者如斯乎，不舍昼夜”——《论语》。其实我觉得这两句表达的意思差不多，实际上就是对于时间流逝，世事无常的感慨，当然老子与孔子的哲学态度不太一样，我们就不要过多的去研究他们的思想了。实际上面对无尽的岁月我们作为这个地球上可能是唯一能够思考永恒话题的生物，我们自然会想的更多。所以古代帝王会有想着长生不老，会有费尽心思修建恢弘的帝陵。其实这些都是对于永恒的尝试吧。<br>&nbsp;&nbsp;&nbsp;&nbsp;其实我们自己又何尝不是这样，有的人喜欢保留着过去的小玩意，有的人珍惜过去的朋友，有的人怀念住过的城市，有的人思念已经离开的人。我们把他们藏在盒子中，藏在记忆中，藏在内心的最深处希望能够永恒。可是大部分其实都洒在了岁月的长河中，其实我觉得对于失去我们好像并不需要过于感慨或者是悲伤，除了明天升起的太阳，没有什么能够在岁月中永恒。作为一个建筑巴黎圣母院被烧毁了，但是对于我来说他并没有妨碍我在《巴黎圣母院》体验到爱与善良，或者有机会我么能够去见证那个毁于大火的建筑，也不能破坏我心中的美好形象。<br>&nbsp;&nbsp;&nbsp;&nbsp;所以虽然我们所珍惜的东西也会遗失在岁月的长河中，其实这并不可惜，更加不需要去悲伤，我想我们所珍惜的每一个东西，每一个人，他们都有着自己的使命，当他们完成了自己的使命后就离开了，而我们也获得了他的馈赠，当然我们也会以同样的方式馈赠给我们生命中所遇到的其他人。“只要是春风吹到的地方，到处是1青青野草野草”——有的人</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;今天被巴黎圣母院的新闻刷屏了，一座经历了几百年的著名建筑就这样在一场意外中几乎毁于一旦。对于此事我表示十分惋惜。其实巴黎圣母院距离我算是太过遥远，我知道这个建筑完全是通过雨果的著名小说。当然对于它所承载的文化内涵除了惋惜并没有
-      
-    
-    </summary>
-    
-    
-      <category term="随感" scheme="http://www.wuweiblog.com/tags/%E9%9A%8F%E6%84%9F/"/>
     
   </entry>
   
